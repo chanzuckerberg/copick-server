@@ -32,5 +32,5 @@ stack:
           resources:
             requests:
               storage: 30Gi
-          storageClassName: "ebs-io2"
+          storageClassName: "gp2"
         mountPath: "/mnt/copick"

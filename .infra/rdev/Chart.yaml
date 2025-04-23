@@ -7,6 +7,3 @@ dependencies:
   - name: stack
     version: 2.6.0
     repository: https://chanzuckerberg.github.io/argo-helm-charts
-  - name: postgresql
-    version: 15.5.20
-    repository: https://charts.bitnami.com/bitnami

@@ -249,36 +249,54 @@ def create_copick_app(
 
     return app
 
-
-def serve_copick(
-    config_path: str, allowed_origins: Optional[List[str]] = None, **kwargs
-):
+def serve_copick(config_path: Optional[str] = None, dataset_ids: Optional[List[int]] = None, overlay_root: str = "/tmp/overlay_root", allowed_origins: Optional[List[str]] = None, **kwargs):
     """Start an HTTP server serving a Copick project.
 
     Parameters
     ----------
-    config_path : str
+    config_path : str, optional
         Path to Copick config file
+    dataset_ids : list of int, optional
+        Dataset IDs to include in the project
+    overlay_root : str, optional
+        Root URL for the overlay storage, default is "/tmp/overlay_root"
     allowed_origins : list of str, optional
         List of allowed CORS origins. Use ["*"] to allow all.
     **kwargs
         Additional arguments passed to uvicorn.run()
+        
+    Notes
+    -----
+    Either config_path or dataset_ids must be provided, but not both.
     """
-    root = copick.from_file(config_path)
+    if config_path and dataset_ids:
+        raise ValueError("Either config_path or dataset_ids must be provided, but not both.")
+    elif config_path:
+        root = copick.from_file(config_path)
+    elif dataset_ids:
+        root = copick.from_czcdp_datasets(
+            dataset_ids=dataset_ids,
+            overlay_root=overlay_root,
+            overlay_fs_args={"auto_mkdir": True},
+        )
+    else:
+        raise ValueError("Either config_path or dataset_ids must be provided.")
+        
     app = create_copick_app(root, allowed_origins)
     uvicorn.run(app, **kwargs)
     return app
 
-
-def serve_copick_threaded(
-    config_path: str, allowed_origins: Optional[List[str]] = None, **kwargs
-):
+def serve_copick_threaded(config_path: Optional[str] = None, dataset_ids: Optional[List[int]] = None, overlay_root: str = "/tmp/overlay_root", allowed_origins: Optional[List[str]] = None, **kwargs):
     """Start an HTTP server in a background thread and return the app.
 
     Parameters
     ----------
-    config_path : str
+    config_path : str, optional
         Path to Copick config file
+    dataset_ids : list of int, optional
+        Dataset IDs to include in the project
+    overlay_root : str, optional
+        Root URL for the overlay storage, default is "/tmp/overlay_root"
     allowed_origins : list of str, optional
         List of allowed CORS origins. Use ["*"] to allow all.
     **kwargs
@@ -288,8 +306,24 @@ def serve_copick_threaded(
     -------
     app : FastAPI
         FastAPI application
+        
+    Notes
+    -----
+    Either config_path or dataset_ids must be provided, but not both.
     """
-    root = copick.from_file(config_path)
+    if config_path and dataset_ids:
+        raise ValueError("Either config_path or dataset_ids must be provided, but not both.")
+    elif config_path:
+        root = copick.from_file(config_path)
+    elif dataset_ids:
+        root = copick.from_czcdp_datasets(
+            dataset_ids=dataset_ids,
+            overlay_root=overlay_root,
+            overlay_fs_args={"auto_mkdir": True},
+        )
+    else:
+        raise ValueError("Either config_path or dataset_ids must be provided.")
+        
     app = create_copick_app(root, allowed_origins)
 
     # Start the server in a background thread
@@ -303,9 +337,36 @@ def serve_copick_threaded(
 
     return app
 
+@click.group()
+@click.pass_context
+def cli(ctx):
+    pass
 
-@click.command()
-@click.argument("config", type=click.Path(exists=True))
+
+@cli.command()
+@click.option(
+    "-c",
+    "--config",
+    type=click.Path(exists=True),
+    help="Path to the configuration file.",
+    required=False,
+    metavar="PATH",
+)
+@click.option(
+    "-ds",
+    "--dataset-ids",
+    type=int,
+    multiple=True,
+    help="Dataset IDs to include in the project (multiple inputs possible).",
+    metavar="ID",
+)
+@click.option(
+    "--overlay-root",
+    type=str,
+    default="/tmp/overlay_root",
+    help="Root URL for the overlay storage.",
+    show_default=True,
+)
 @click.option(
     "--cors",
     type=str,
@@ -327,15 +388,30 @@ def serve_copick_threaded(
     show_default=True,
 )
 @click.option("--reload", is_flag=True, default=False, help="Enable auto-reload.")
-def main(config: str, cors: Optional[str], host: str, port: int, reload: bool):
+@click.pass_context
+def serve(ctx, config: Optional[str] = None, dataset_ids: Optional[tuple] = None, overlay_root: str = "/tmp/overlay_root", cors: Optional[str] = None, host: str = "127.0.0.1", port: int = 8000, reload: bool = False):
     """Serve a Copick project over HTTP."""
-    serve_copick(
-        config,
-        allowed_origins=[cors] if cors else None,
-        host=host,
-        port=port,
-        reload=reload,
-    )
+    if config and dataset_ids:
+        ctx.fail("Either --config or --dataset-ids must be provided, not both.")
+    elif not config and not dataset_ids:
+        ctx.fail("Either --config or --dataset-ids must be provided.")
+    
+    try:
+        serve_copick(
+            config_path=config,
+            dataset_ids=dataset_ids if dataset_ids else None,
+            overlay_root=overlay_root,
+            allowed_origins=[cors] if cors else None,
+            host=host,
+            port=port,
+            reload=reload
+        )
+    except Exception as e:
+        ctx.fail(f"Error serving Copick project: {str(e)}")
+
+
+def main():
+    cli()
 
 
 if __name__ == "__main__":

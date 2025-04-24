@@ -143,22 +143,42 @@ async def test_handle_segmentation_request(
     run_mock = MagicMock()
     root_mock = MagicMock()
     root_mock.get_run.return_value = run_mock
-
-    # Patch to replace the route handler's root with our mock
-    with patch("copick_server.server.CopickRoute.root", root_mock):
-        # Set up mock for _handle_segmentation
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_handle_segmentation.return_value = mock_response
-
-        # Make the request
-        response = client.get("/test_run/Segmentations/10.0_user_session_test.zarr")
-
-        # Verify the response
-        assert response.status_code == 200
-
-        # Verify the correct run was obtained
-        root_mock.get_run.assert_called_once_with("test_run")
-
-        # Verify _handle_segmentation was called
-        mock_handle_segmentation.assert_called_once()
+    
+    # Set up mock for _handle_segmentation
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_handle_segmentation.return_value = mock_response
+    
+    # Patch the handler's get_run call
+    with patch.object(client.app.dependency_overrides, "get", return_value=None):
+        # Override the route handler's root with a side effect
+        original_handle_request = client.app.routes[0].endpoint
+        
+        async def patched_handle_request(request, path):
+            # Replace the root for this request
+            route_handler = client.app.routes[0].endpoint.__self__
+            original_root = route_handler.root
+            route_handler.root = root_mock
+            try:
+                return await original_handle_request(request, path)
+            finally:
+                route_handler.root = original_root
+        
+        # Apply our patch
+        client.app.routes[0].endpoint = patched_handle_request
+        
+        try:
+            # Make the request
+            response = client.get("/test_run/Segmentations/10.0_user_session_test.zarr")
+            
+            # Verify the response
+            assert response.status_code == 200
+            
+            # Verify the correct run was obtained
+            root_mock.get_run.assert_called_once_with("test_run")
+            
+            # Verify _handle_segmentation was called
+            mock_handle_segmentation.assert_called_once()
+        finally:
+            # Restore the original endpoint
+            client.app.routes[0].endpoint = original_handle_request

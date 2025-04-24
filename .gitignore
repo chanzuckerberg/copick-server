@@ -11,3 +11,5 @@ wheels/
 
 temp.zarr/
 copick_project/
+.coverage*
+coverage.xml

@@ -11,14 +11,6 @@ on:
         description: 'Glob patterns to match against changed files in the repository, comma delimited'
         required: true
         type: string
-      path_filters_base:
-        description: |
-          Git reference (e.g. branch name) against which the changes will be detected. Defaults to the current branch.
-          If it references same branch it was pushed to, changes are detected against the most recent commit before the push.
-          This option is ignored if action is triggered by pull_request event.
-        required: false
-        type: string
-        default: ${{ github.ref }}
       branches_include:
         description: 'Branches to build on, comma delimited'
         required: false
@@ -43,7 +35,6 @@ jobs:
       branches_include: ${{ inputs.branches_include }}
       branches_ignore: ${{ inputs.branches_ignore }}
       path_filters: ${{ inputs.path_filters }}
-      path_filters_base: ${{ inputs.path_filters_base }}
       envs: ${{ inputs.envs }}
       force_update_manifests: ${{ inputs.force_update_manifests }}
       images: |

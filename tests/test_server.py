@@ -13,45 +13,22 @@ def test_create_copick_app(app):
 
 
 def test_cors_middleware(mock_copick_root):
-    """Test that CORS middleware is added correctly."""
+    """Test that CORS is properly configured."""
     from copick_server.server import create_copick_app
-    from fastapi.middleware.cors import CORSMiddleware
+    from fastapi.testclient import TestClient
     
     # Create app with CORS origins
     app = create_copick_app(mock_copick_root, cors_origins=["https://example.com"])
     
-    # Print debugging information about middleware
-    middleware_details = []
-    for middleware in app.user_middleware:
-        middleware_info = {
-            "class": middleware.__class__.__name__,
-            "module": middleware.__class__.__module__,
-            "str": str(middleware),
-            "dir": dir(middleware)
-        }
-        middleware_details.append(middleware_info)
+    # Create a test client
+    client = TestClient(app)
     
-    # Look for CORS middleware in a more general way
-    cors_middleware_found = False
-    for middleware in app.user_middleware:
-        middleware_str = str(middleware).lower()
-        if 'cors' in middleware_str:
-            cors_middleware_found = True
-            break
+    # Make a request with an Origin header
+    response = client.get("/any-path", headers={"Origin": "https://example.com"})
     
-    # If not found, also try looking for middleware with similar functionality
-    if not cors_middleware_found:
-        for middleware in app.user_middleware:
-            if hasattr(middleware, 'allow_origins') or hasattr(middleware, 'allow_methods'):
-                cors_middleware_found = True
-                break
-    
-    # Instead of checking for the middleware, let's check if the app has the CORS settings
-    # This is a workaround for the test
-    if not cors_middleware_found and hasattr(app, '_middleware_stack'):
-        cors_middleware_found = True
-    
-    assert cors_middleware_found, f"CORS middleware not found. Middleware details: {middleware_details}"
+    # Check if CORS headers are present in the response
+    assert "access-control-allow-origin" in response.headers, "CORS headers not found in response"
+    assert response.headers["access-control-allow-origin"] == "https://example.com", "Incorrect CORS origin value"
 
 
 @pytest.mark.asyncio

@@ -21,13 +21,13 @@ python -m copick_server.server serve --config path/to/copick_config.json --cors 
 #### Using dataset IDs from CZ cryoET Data Portal
 
 ```bash
-python -m copick_server.server serve --dataset-ids 14268 --cors "*" --port 8017
+python -m copick_server.server serve --dataset-ids 10440 --cors "*" --port 8017
 ```
 
 You can use multiple dataset IDs by repeating the option:
 
 ```bash
-python -m copick_server.server serve --dataset-ids 14268 --dataset-ids 10301 --cors "*" --port 8017
+python -m copick_server.server serve --dataset-ids 10440 --dataset-ids 10441 --cors "*" --port 8017
 ```
 
 #### Using uv run
@@ -39,21 +39,13 @@ uv run copick_server/server.py serve --config ~/Data/copick/full_ml_challenge_cz
 
 With dataset IDs:
 ```bash
-uv run copick_server/server.py serve --dataset-ids 14268 --cors "*" --port 8017
-```
-
-#### Demo server
-
-The demo server uses a dataset ID by default:
-
-```bash
-python -m copick_server.demo_server
+uv run copick_server/server.py serve --dataset-ids 10440 --cors "*" --port 8017
 ```
 
 ### Launch a client
 
 ```bash
-python -m copick_server.client
+uv run copick_server/client.py
 ```
 
 ## Running Tests

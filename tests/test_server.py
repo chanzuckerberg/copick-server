@@ -96,39 +96,36 @@ async def test_handle_picks_request(mock_handle_picks, client, monkeypatch):
     mock_response.status_code = 200
     mock_handle_picks.return_value = mock_response
     
-    # Patch the handler's get_run call
-    with patch.object(client.app.dependency_overrides, "get", return_value=None):
-        # Override the route handler's root with a side effect
-        original_handle_request = client.app.routes[0].endpoint
+    # Find the route handler in the application
+    route_handler = None
+    for route in client.app.routes:
+        if isinstance(route.endpoint, types.MethodType) and route.endpoint.__self__.__class__.__name__ == 'CopickRoute':
+            route_handler = route.endpoint.__self__
+            break
+    
+    assert route_handler is not None, "Could not find CopickRoute handler"
+    
+    # Save the original root
+    original_root = route_handler.root
+    
+    # Temporarily replace the root
+    route_handler.root = root_mock
+    
+    try:
+        # Make the request
+        response = client.get("/test_run/Picks/user_session_test.json")
         
-        async def patched_handle_request(request, path):
-            # Replace the root for this request
-            route_handler = client.app.routes[0].endpoint.__self__
-            original_root = route_handler.root
-            route_handler.root = root_mock
-            try:
-                return await original_handle_request(request, path)
-            finally:
-                route_handler.root = original_root
+        # Verify the response
+        assert response.status_code == 200
         
-        # Apply our patch
-        client.app.routes[0].endpoint = patched_handle_request
+        # Verify the correct run was obtained
+        root_mock.get_run.assert_called_once_with("test_run")
         
-        try:
-            # Make the request
-            response = client.get("/test_run/Picks/user_session_test.json")
-            
-            # Verify the response
-            assert response.status_code == 200
-            
-            # Verify the correct run was obtained
-            root_mock.get_run.assert_called_once_with("test_run")
-            
-            # Verify _handle_picks was called
-            mock_handle_picks.assert_called_once()
-        finally:
-            # Restore the original endpoint
-            client.app.routes[0].endpoint = original_handle_request
+        # Verify _handle_picks was called
+        mock_handle_picks.assert_called_once()
+    finally:
+        # Restore the original root
+        route_handler.root = original_root
 
 
 @pytest.mark.asyncio

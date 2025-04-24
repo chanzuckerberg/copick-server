@@ -420,6 +420,5 @@ def serve(ctx, config: Optional[str] = None, dataset_ids: Optional[tuple] = None
 def main():
     cli()
 
-
 if __name__ == "__main__":
     main()

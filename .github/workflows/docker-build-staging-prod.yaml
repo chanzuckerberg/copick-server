@@ -1,0 +1,14 @@
+name: Docker Build Staging/Prod
+
+on:
+  - push
+
+jobs:
+  argus_builder:
+    uses: ./.github/workflows/workflow-argus-docker-build.yaml
+    secrets: inherit
+    with:
+      envs: staging,prod
+      path_filters: '!.infra/**'
+      branches_include: release-please--branches--main
+      force_update_manifests: true

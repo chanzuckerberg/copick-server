@@ -1,0 +1,40 @@
+stack:
+  global:
+    replicaCount: 1
+    autoscaling:
+      enabled: false
+    service:
+      port: 8012
+    nodeSelector:
+      kubernetes.io/arch: amd64
+    ingress:
+      annotations:
+        nginx.ingress.kubernetes.io/client-max-body-size: 1G
+        nginx.ingress.kubernetes.io/proxy-body-size: 1G
+
+  services:
+    copick-server:
+      image:
+        # first app_name is the app name, the second is the name used in `workflow-argus-docker-build.yaml`
+        repository: 533267185808.dkr.ecr.us-west-2.amazonaws.com/core-platform/copick-server/copick-server 
+      livenessProbe:
+        httpGet:
+          path: /health/
+        timeoutSeconds: 10
+      readinessProbe:
+        httpGet:
+          path: /health/
+        timeoutSeconds: 10
+      ingress:
+        oidcProtected: false
+        paths:
+          - path: /
+            pathType: Prefix
+      persistence:
+        enabled: true
+        pvc:
+          resources:
+            requests:
+              storage: 30Gi
+          storageClassName: "gp2"
+        mountPath: "/mnt/copick"

@@ -4,7 +4,7 @@ import numpy as np
 from fsspec import get_mapper
 
 # First read the tomogram to get the shape
-store = get_mapper("http://localhost:8017/16463/Tomograms/VoxelSpacing10.012/wbp.zarr")
+store = get_mapper("http://localhost:8012/16463/Tomograms/VoxelSpacing10.012/wbp-denoised-denoiset-ctfdeconv.zarr")
 tomo = zarr.open(store, mode='r')
 full_shape = tomo["0"].shape
 print(f"Tomogram shape: {full_shape}")
@@ -33,7 +33,7 @@ shape_header = np.array(data.shape, dtype=np.int64).tobytes()
 data_bytes = shape_header + data.tobytes()
 
 # Send to server as a single request
-url = f"http://localhost:8017/16463/Segmentations/{seg_filename}"
+url = f"http://localhost:8012/16463/Segmentations/{seg_filename}"
 response = requests.put(url, data=data_bytes)
 
 if response.status_code == 200:

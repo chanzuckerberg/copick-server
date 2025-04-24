@@ -1,4 +1,3 @@
-import json
 import types
 import pytest
 from unittest.mock import MagicMock, patch
@@ -132,7 +131,9 @@ async def test_handle_picks_request(mock_handle_picks, client, monkeypatch):
 
 @pytest.mark.asyncio
 @patch("copick_server.server.CopickRoute._handle_segmentation")
-async def test_handle_segmentation_request(mock_handle_segmentation, client, monkeypatch):
+async def test_handle_segmentation_request(
+    mock_handle_segmentation, client, monkeypatch
+):
     """Test that segmentation requests are routed correctly."""
     # Mock the get_run method to return a valid run
     run_mock = MagicMock()

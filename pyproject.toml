@@ -5,14 +5,14 @@ description = "Server for hosting Copick data"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "click",
-    "copick>=1.0.1",
-    "numpy",
-    "uvicorn",
-    "zarr",
-    "fsspec",
-    "fastapi",
-    "copick-utils @ git+https://github.com/copick/copick-utils",
+    "click>=8.1.8",
+    "copick>=1.0.2",
+    "copick-utils>=0.0.1",
+    "fastapi>=0.115.12",
+    "fsspec>=2025.3.2",
+    "numpy>=2.2.4",
+    "uvicorn>=0.34.1",
+    "zarr>=2.18.3",
 ]
 
 [project.optional-dependencies]
@@ -21,6 +21,10 @@ test = [
     "pytest-asyncio",
     "httpx",
     "pytest-cov",
+]
+
+dev = [
+    "ruff",
 ]
 
 [build-system]

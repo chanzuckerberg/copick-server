@@ -1,5 +1,4 @@
 import json
-import os
 import tempfile
 from pathlib import Path
 
@@ -17,7 +16,7 @@ def example_config():
         # Create the overlay directory structure
         overlay_path = Path(temp_dir) / "overlay"
         overlay_path.mkdir()
-        
+
         # Create a simple Copick config
         config_data = {
             "name": "Test Project",
@@ -29,23 +28,21 @@ def example_config():
                     "is_particle": True,
                     "label": 1,
                     "color": [0, 117, 220, 255],
-                    "radius": 150.0
+                    "radius": 150.0,
                 }
             ],
             "user_id": "test_user",
             "config_type": "cryoet_data_portal",
             "overlay_root": f"local://{str(overlay_path)}/",
             "dataset_ids": [12345],
-            "overlay_fs_args": {
-                "auto_mkdir": True
-            }
+            "overlay_fs_args": {"auto_mkdir": True},
         }
-        
+
         # Write config to a temporary file
         config_path = Path(temp_dir) / "test_config.json"
         with open(config_path, "w") as f:
             json.dump(config_data, f)
-            
+
         yield str(config_path)
 
 
@@ -54,7 +51,7 @@ def mock_copick_root(monkeypatch, example_config):
     """Mock a CopickRoot instance for testing."""
     # Create a minimal mock root with just enough functionality for testing
     # In a real setup, you would mock specific methods of CopickRoot
-    
+
     # This is a simple case - for more complex mocking, consider using unittest.mock
     return copick.from_file(example_config)
 

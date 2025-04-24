@@ -1,0 +1,19 @@
+services:
+  copick-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args: 
+        - BUILDKIT_INLINE_CACHE=1
+    platform: linux/amd64 # copick depends on numcodecs 0.15.1 which is not available for arm64
+    volumes:
+      - .:/app
+    ports:
+      - "8012:8012"
+    command: ["./start_webapp.sh"]
+    
+networks:
+  default:
+    name: copick-server
+    driver: overlay
+    attachable: true

@@ -1,5 +1,5 @@
 import json
-from typing import Dict, List, Optional, Union
+from typing import List, Optional
 
 import click
 import copick
@@ -7,42 +7,49 @@ import numpy as np
 import uvicorn
 import threading
 
-import zarr
-from fsspec import AbstractFileSystem
 from fastapi import FastAPI, Request, Response
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.routing import APIRoute
+
 
 class CopickRoute:
     """Route handler for Copick data entities."""
-    
+
     def __init__(self, root: copick.models.CopickRoot):
         self.root = root
-        
+
     async def handle_request(self, request: Request, path: str):
         # Parse path parameters
         path_parts = path.split("/")
-        
+        print(path_parts)
+
         # Handle different path patterns
         try:
             if len(path_parts) >= 3:
                 run_name = path_parts[0]
                 data_type = path_parts[1]
-                
+                print(run_name)
+                print(data_type)
+
                 # Get the run
                 run = self.root.get_run(run_name)
+                print("run", run)
                 if run is None:
                     return Response(status_code=404)
-                    
+
                 if data_type == "Tomograms":
-                    return await self._handle_tomogram(request, run, "/".join(path_parts[2:]))
+                    return await self._handle_tomogram(
+                        request, run, "/".join(path_parts[2:])
+                    )
                 elif data_type == "Picks":
-                    return await self._handle_picks(request, run, "/".join(path_parts[2:]))
+                    return await self._handle_picks(
+                        request, run, "/".join(path_parts[2:])
+                    )
                 elif data_type == "Segmentations":
-                    return await self._handle_segmentation(request, run, "/".join(path_parts[2:]))
-                
+                    return await self._handle_segmentation(
+                        request, run, "/".join(path_parts[2:])
+                    )
+
             return Response(status_code=404)
-            
+
         except Exception as e:
             print(f"Error handling request: {str(e)}")
             return Response(status_code=500)
@@ -65,8 +72,11 @@ class CopickRoute:
         vs = run.get_voxel_spacing(voxel_spacing)
         if vs is None:
             return Response(status_code=404)
+        print("tomo_type", tomo_type)
+        print("vs", vs)
             
         tomogram = vs.get_tomogram(tomo_type)
+        print(tomogram)
         if tomogram is None:
             return Response(status_code=404)
             
@@ -92,20 +102,25 @@ class CopickRoute:
         parts = path.split("/")
         if len(parts) < 1:
             return Response(status_code=404)
-            
+
         pick_file = parts[0]
         pick_parts = pick_file.split("_")
         if len(pick_parts) != 3:
             return Response(status_code=404)
-            
+
         user_id, session_id, object_name = pick_parts
         object_name = object_name.replace(".json", "")
-        
+        print("user_id", user_id)
+        print("session_id", session_id)
+        print("object_name", object_name)
+
         # Get or create picks
         picks = None
         if request.method == "PUT":
             try:
-                picks = run.new_picks(object_name=object_name, user_id=user_id, session_id=session_id)
+                picks = run.new_picks(
+                    object_name=object_name, user_id=user_id, session_id=session_id
+                )
                 data = await request.json()
                 picks.meta = copick.models.CopickPicksFile(**data)
                 picks.store()
@@ -114,13 +129,13 @@ class CopickRoute:
                 print(f"Picks write error: {str(e)}")
                 return Response(status_code=500)
         else:
-            picks = run.get_picks(object_name=object_name, user_id=user_id, session_id=session_id)
+            picks = run.picks
             if not picks:
                 return Response(status_code=404)
-                
+
             if request.method == "HEAD":
                 return Response(status_code=200)
-                
+
             return Response(json.dumps(picks[0].meta.dict()), status_code=200)
 
     async def _handle_segmentation(self, request, run, path):
@@ -128,33 +143,33 @@ class CopickRoute:
         parts = path.split("/")
         if len(parts) < 1:
             return Response(status_code=404)
-            
+
         seg_file = parts[0].replace(".zarr", "")
         seg_parts = seg_file.split("_")
         if len(seg_parts) < 4:
             return Response(status_code=404)
-            
+
         voxel_size = float(seg_parts[0])
         user_id = seg_parts[1]
         session_id = seg_parts[2]
         name = "_".join(seg_parts[3:])
         is_multilabel = "multilabel" in name
-        
+
         # Get or create segmentation
         if request.method == "PUT":
             try:
                 # Get the data from the request body
                 blob = await request.body()
-                
+
                 # Extract shape information (first 24 bytes contain 3 int64 values)
                 shape = np.frombuffer(blob[:24], dtype=np.int64)
-                
+
                 # Extract the actual data and reshape it
                 data = np.frombuffer(blob[24:], dtype=np.uint8).reshape(shape)
-                
+
                 # Import the writer utility
                 from copick_utils.writers.write import segmentation
-                
+
                 # Use the utility function to write the segmentation
                 seg = segmentation(
                     run=run,
@@ -163,9 +178,9 @@ class CopickRoute:
                     name=name.replace("-multilabel", ""),
                     session_id=session_id,
                     voxel_size=voxel_size,
-                    multilabel=is_multilabel
+                    multilabel=is_multilabel,
                 )
-                
+
                 return Response(status_code=200)
             except Exception as e:
                 print(f"Segmentation write error: {str(e)}")
@@ -176,11 +191,11 @@ class CopickRoute:
                 name=name.replace("-multilabel", ""),
                 user_id=user_id,
                 session_id=session_id,
-                is_multilabel=is_multilabel
+                is_multilabel=is_multilabel,
             )
             if not segs:
                 return Response(status_code=404)
-                
+
             seg = segs[0]
             try:
                 body = seg.zarr()["/".join(parts[1:])]
@@ -190,16 +205,19 @@ class CopickRoute:
             except KeyError:
                 return Response(status_code=404)
 
-def create_copick_app(root: copick.models.CopickRoot, cors_origins: Optional[List[str]] = None) -> FastAPI:
+
+def create_copick_app(
+    root: copick.models.CopickRoot, cors_origins: Optional[List[str]] = None
+) -> FastAPI:
     """Create a FastAPI app for serving a Copick project.
-    
+
     Parameters
     ----------
     root : copick.models.CopickRoot
         Copick project root to serve
     cors_origins : list of str, optional
         List of allowed CORS origins. Use ["*"] to allow all.
-        
+
     Returns
     -------
     app : FastAPI
@@ -207,14 +225,16 @@ def create_copick_app(root: copick.models.CopickRoot, cors_origins: Optional[Lis
     """
     app = FastAPI()
     route_handler = CopickRoute(root)
-    
+    @app.get("/health/")
+    def health_check():
+        """Health check endpoint."""
+        return {"status": "ok"}
+
     # Add the catch-all route
     app.add_api_route(
-        "/{path:path}",
-        route_handler.handle_request,
-        methods=["GET", "HEAD", "PUT"]
+        "/{path:path}", route_handler.handle_request, methods=["GET", "HEAD", "PUT"]
     )
-    
+
     # Add CORS middleware if origins are specified
     if cors_origins:
         # Ensure CORS middleware is properly initialized
@@ -236,7 +256,7 @@ def create_copick_app(root: copick.models.CopickRoot, cors_origins: Optional[Lis
 
 def serve_copick(config_path: Optional[str] = None, dataset_ids: Optional[List[int]] = None, overlay_root: str = "/tmp/overlay_root", allowed_origins: Optional[List[str]] = None, **kwargs):
     """Start an HTTP server serving a Copick project.
-    
+
     Parameters
     ----------
     config_path : str, optional
@@ -273,7 +293,7 @@ def serve_copick(config_path: Optional[str] = None, dataset_ids: Optional[List[i
 
 def serve_copick_threaded(config_path: Optional[str] = None, dataset_ids: Optional[List[int]] = None, overlay_root: str = "/tmp/overlay_root", allowed_origins: Optional[List[str]] = None, **kwargs):
     """Start an HTTP server in a background thread and return the app.
-    
+
     Parameters
     ----------
     config_path : str, optional
@@ -286,7 +306,7 @@ def serve_copick_threaded(config_path: Optional[str] = None, dataset_ids: Option
         List of allowed CORS origins. Use ["*"] to allow all.
     **kwargs
         Additional arguments passed to uvicorn.run()
-        
+
     Returns
     -------
     app : FastAPI
@@ -310,16 +330,16 @@ def serve_copick_threaded(config_path: Optional[str] = None, dataset_ids: Option
         raise ValueError("Either config_path or dataset_ids must be provided.")
         
     app = create_copick_app(root, allowed_origins)
-    
+
     # Start the server in a background thread
     server_thread = threading.Thread(
         target=uvicorn.run,
         args=(app,),
         kwargs=kwargs,
-        daemon=True  # This makes the thread exit when the main thread exits
+        daemon=True,  # This makes the thread exit when the main thread exits
     )
     server_thread.start()
-    
+
     return app
 
 @click.group()

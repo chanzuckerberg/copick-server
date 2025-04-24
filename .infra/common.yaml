@@ -7,6 +7,10 @@ stack:
       port: 8012
     nodeSelector:
       kubernetes.io/arch: amd64
+    ingress:
+      annotations:
+        nginx.ingress.kubernetes.io/client-max-body-size: 1G
+        nginx.ingress.kubernetes.io/proxy-body-size: 1G
 
   services:
     copick-server:

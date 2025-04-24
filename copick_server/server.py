@@ -57,30 +57,29 @@ class CopickRoute:
     async def _handle_tomogram(self, request, run, path):
         # Extract voxel spacing and tomogram type from path
         parts = path.split("/")
-        print(parts)
         if len(parts) < 2:
             return Response(status_code=404)
-
+            
         vs_str = parts[0].replace("VoxelSpacing", "")
         try:
             voxel_spacing = float(vs_str)
         except ValueError:
             return Response(status_code=404)
-
+            
         tomo_type = parts[1].replace(".zarr", "")
 
         # Get the tomogram
         vs = run.get_voxel_spacing(voxel_spacing)
         if vs is None:
             return Response(status_code=404)
-        print("vs", vs)
-
         print("tomo_type", tomo_type)
-        tomogram = vs.get_tomograms(tomo_type)
-        print("tomogram", tomogram)
+        print("vs", vs)
+            
+        tomogram = vs.get_tomogram(tomo_type)
+        print(tomogram)
         if tomogram is None:
             return Response(status_code=404)
-
+            
         # Handle the request
         if request.method == "PUT" and not tomogram.read_only:
             try:

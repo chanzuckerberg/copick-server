@@ -18,9 +18,14 @@ def test_cors_middleware(mock_copick_root):
     app = create_copick_app(mock_copick_root, cors_origins=["https://example.com"])
 
     # Check that the middleware exists
-    assert len(app.user_middleware) > 0
-    middleware_classes = [m.__class__.__name__ for m in app.user_middleware]
-    assert "CORSMiddleware" in middleware_classes
+    assert len(app.middleware) > 0
+    # Check if any of the middleware contains CORSMiddleware
+    cors_middleware_found = False
+    for middleware in app.middleware:
+        if str(middleware) and "CORSMiddleware" in str(middleware):
+            cors_middleware_found = True
+            break
+    assert cors_middleware_found
 
 
 @pytest.mark.asyncio

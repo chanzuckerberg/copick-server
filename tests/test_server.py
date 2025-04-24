@@ -13,16 +13,15 @@ def test_create_copick_app(app):
 def test_cors_middleware(mock_copick_root):
     """Test that CORS middleware is added correctly."""
     from copick_server.server import create_copick_app
-
+    from fastapi.middleware.cors import CORSMiddleware
+    
     # Create app with CORS origins
     app = create_copick_app(mock_copick_root, cors_origins=["https://example.com"])
-
-    # Check that the middleware exists
-    assert len(app.middleware) > 0
-    # Check if any of the middleware contains CORSMiddleware
+    
+    # Check that at least one middleware is a CORSMiddleware
     cors_middleware_found = False
-    for middleware in app.middleware:
-        if str(middleware) and "CORSMiddleware" in str(middleware):
+    for middleware in app.user_middleware:
+        if isinstance(middleware, CORSMiddleware.__class__):
             cors_middleware_found = True
             break
     assert cors_middleware_found

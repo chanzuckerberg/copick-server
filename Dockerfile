@@ -14,4 +14,4 @@ ENV UV_PROJECT_ENVIRONMENT=/opt/venv
 
 RUN uv sync --frozen
 
-CMD ["uv", "run", "copick_server/server.py", "example_copick.json", "--host", "0.0.0.0", "--port", "8012"]
+CMD ["./start_webapp.sh"]

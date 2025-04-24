@@ -239,14 +239,21 @@ def create_copick_app(
 
     # Add CORS middleware if origins are specified
     if cors_origins:
-        app.add_middleware(
-            CORSMiddleware,
-            allow_origins=cors_origins,
-            allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
-        )
-
+        # Ensure CORS middleware is properly initialized
+        try:
+            from fastapi.middleware.cors import CORSMiddleware
+            app.add_middleware(
+                CORSMiddleware,
+                allow_origins=cors_origins,
+                allow_credentials=True,
+                allow_methods=["*"],
+                allow_headers=["*"],
+            )
+            # Print for debugging
+            print(f"CORS middleware added with origins: {cors_origins}")
+        except Exception as e:
+            print(f"Error adding CORS middleware: {str(e)}")
+    
     return app
 
 def serve_copick(config_path: Optional[str] = None, dataset_ids: Optional[List[int]] = None, overlay_root: str = "/tmp/overlay_root", allowed_origins: Optional[List[str]] = None, **kwargs):

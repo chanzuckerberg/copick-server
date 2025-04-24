@@ -27,7 +27,7 @@ jobs:
 
     steps:
       - name: Create Staging Stack
-        uses: chanzuckerberg/argus-artifacts/ci/packages/create-stack@v0.67.0.0
+        uses: chanzuckerberg/argus-artifacts/ci/packages/create-stack@v0
         with:
           appName: copick-server
           envName: staging

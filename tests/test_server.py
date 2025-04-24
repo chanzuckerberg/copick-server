@@ -20,21 +20,14 @@ def test_cors_middleware(mock_copick_root):
     # Create app with CORS origins
     app = create_copick_app(mock_copick_root, cors_origins=["https://example.com"])
     
-    # Check that the CORS middleware was added
-    # Get all middlewares from the app
-    middlewares = app.user_middleware
+    # Direct approach for finding the CORS middleware
+    cors_middleware_found = any(
+        middleware.__class__.__module__ == 'fastapi.middleware.cors' and
+        middleware.__class__.__name__ == 'CORSMiddleware'
+        for middleware in app.user_middleware
+    )
     
-    # Debug middleware information
-    middleware_types = [type(m).__name__ for m in middlewares]
-    
-    # Look for the CORSMiddleware
-    cors_middleware_found = False
-    for middleware in middlewares:
-        if type(middleware).__name__ == "CORSMiddleware":
-            cors_middleware_found = True
-            break
-    
-    assert cors_middleware_found, f"CORS middleware not found among middleware types: {middleware_types}"
+    assert cors_middleware_found, f"CORS middleware not found in the application"
 
 
 @pytest.mark.asyncio

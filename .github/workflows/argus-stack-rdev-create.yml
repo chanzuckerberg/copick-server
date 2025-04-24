@@ -20,7 +20,7 @@ jobs:
     steps:
       - name: Create rdev stack
         id: upsert
-        uses: chanzuckerberg/argus-artifacts/ci/packages/create-stack@v0.24.0
+        uses: chanzuckerberg/argus-artifacts/ci/packages/create-stack@v0.0
         with:
           appName: copick-server
           envName: rdev

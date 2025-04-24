@@ -118,9 +118,11 @@
       ],
     "user_id": "copickServer",
     "config_type": "cryoet_data_portal",
-    "overlay_root": "local:///app/copick_project/",
+    "overlay_root": "local:///mnt/copick/overlay",
     "dataset_ids": [
-        10440
+        10440,
+        10445,
+        10446
     ],
     "overlay_fs_args": {
         "auto_mkdir": true

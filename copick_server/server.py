@@ -396,6 +396,7 @@ def cli(ctx):
 @click.pass_context
 def serve(ctx, config: Optional[str] = None, dataset_ids: Optional[tuple] = None, overlay_root: str = "/tmp/overlay_root", cors: Optional[str] = None, host: str = "127.0.0.1", port: int = 8000, reload: bool = False):
     """Serve a Copick project over HTTP."""
+    
     if config and dataset_ids:
         ctx.fail("Either --config or --dataset-ids must be provided, not both.")
     elif not config and not dataset_ids:

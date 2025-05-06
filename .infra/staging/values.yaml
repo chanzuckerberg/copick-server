@@ -1,4 +1,12 @@
 stack:
+  global:
+    ingress:
+      annotations:
+        nginx.ingress.kubernetes.io/auth-type: basic
+        nginx.ingress.kubernetes.io/auth-secret: copick-auth
+        nginx.ingress.kubernetes.io/auth-realm: "Authentication Required"
+        nginx.ingress.kubernetes.io/configuration-snippet: |
+          proxy_set_header Authorization $http_authorization;
   services:
     copick-server:
       image:

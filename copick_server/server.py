@@ -129,7 +129,7 @@ class CopickRoute:
                 print(f"Picks write error: {str(e)}")
                 return Response(status_code=500)
         else:
-            picks = run.picks
+            picks = run.get_picks(object_name=object_name, user_id=user_id, session_id=session_id)
             if not picks:
                 return Response(status_code=404)
 

@@ -12,6 +12,7 @@ dependencies = [
     "fsspec>=2025.3.2",
     "numpy>=2.2.4",
     "uvicorn>=0.34.1",
+    "pydantic-settings>=2.8.1",
     "zarr>=2.18.3",
 ]
 

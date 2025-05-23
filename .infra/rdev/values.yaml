@@ -2,5 +2,5 @@ stack:
   services:
     copick-server:
       image:
-        tag: sha-58c92ed
+        tag: sha-e780d28
       replicaCount: 1

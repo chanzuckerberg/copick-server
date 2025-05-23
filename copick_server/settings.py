@@ -10,7 +10,6 @@ class Settings(BaseSettings):
     HOST: str = "127.0.0.1"
     CORS: str = "*"
     DEBUG: bool = True
-    DATASET_IDS: list[str] = ["10440", "10445", "10446"] 
+    DATASET_IDS: list[str] = ["10440", "10445", "10446"]
     OVERLAY_ROOT: str = "/tmp/overlay_root"
     CONFIG: str = ""
-

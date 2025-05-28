@@ -24,10 +24,48 @@ class NearestPointQuery(BaseModel):
     model: str  # TODO: convert to enum ?
     k_nearest: int = 10
 
+
+class NearestEmbeddingQuery(BaseModel):
+    embedding: list[float]
+    run_id: int
+    dataset_id: str
+    model: str  # TODO: convert to enum ?
+    k_nearest: int = 10
+
+
 ### helpers
+
 
 def points_to_index(x: float, y: float, z: float) -> tuple[int, int, int]:
     return (int(x * SCALING_FACTOR), int(y * SCALING_FACTOR), int(z * SCALING_FACTOR))
+
+
+def fast_dot_product(query, matrix, k=3):
+    # From https://minimaxir.com/2025/02/embeddings-parquet/
+    # TODO: Do I have to normalize?
+    dot_products = query @ matrix.T
+
+    idx = np.argpartition(dot_products, -k)[-k:]
+    idx = idx[np.argsort(dot_products[idx])[::-1]]
+
+    score = dot_products[idx]
+
+    return idx, score
+
+
+def output_format(df_row):
+    return {
+        "X": df_row.X.item(),
+        "Y": df_row.Y.item(),
+        "Z": df_row.Z.item(),
+        "run_name": df_row.run.item(),
+        "prediction": df_row.protein,
+        "embeddings": df_row.iloc[5:].to_numpy(dtype=float).tolist(),
+    }
+
+
+### Webapp
+
 
 def get_app(settings: Settings) -> FastAPI:
     # Create and run app
@@ -193,10 +231,12 @@ async def get_tomograms(
     body = tomos[0].zarr()[name]
     return Response(body, status_code=200)
 
+
 SCALING_FACTOR = 10000  # TODO: add to settings
 
 ### embeddings datafile should look something like:
 ### X, Y, Z, run, dataset, protein, embeddings: tomotwin: [0.1, 0.2, 0.3, ...]
+
 
 @app.post("/nearest_points")
 async def nearest_points(point_query: NearestPointQuery):
@@ -229,6 +269,33 @@ async def nearest_points(point_query: NearestPointQuery):
         point_lookup[points_to_index(nearest[0], nearest[1], nearest[2])]
         for nearest in k_nearest
     ]
+
+
+@app.post("/embedding_similarity")
+async def embedding_similarity(
+    embedding_query: NearestEmbeddingQuery,
+):
+    """Get the nearest points based on embedding similarity."""
+    embeddings_table = ibis.read_parquet("data/embeddings.parquet")
+    df = (
+        embeddings_table.select(
+            ["X", "Y", "Z", "run", "protein"] + [str(i) for i in range(32)]
+        )
+        .filter(embeddings_table["run"] == embedding_query.run_id)
+        .to_pandas()
+    )  # TODO: again, handle embeddings better
+    embeddings = df.iloc[:, 5:].to_numpy(dtype=float)
+    query = np.array(embedding_query.embedding, dtype=float)
+
+    # Assuming embedding is 1d vector maybe a bad assumption?
+    assert query.shape[0] == embeddings.shape[1]
+    idx, score = fast_dot_product(
+        query,
+        embeddings,
+        k=embedding_query.k_nearest,
+    )
+    print(idx, score)
+    return [output_format(df.iloc[loc]) for loc in idx]
 
 
 app.add_api_route(

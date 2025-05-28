@@ -2,9 +2,9 @@ stack:
   services:
     copick-server:
       image:
-        tag: sha-dd21e53
+        tag: sha-d886cd9
       replicaCount: 1
-      env: 
+      env:
         - name: PORT
           value: "8012"
         - name: HOST

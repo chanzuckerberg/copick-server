@@ -37,7 +37,7 @@ clean-test: ## remove test and coverage artifacts
 	rm -fr .pytest_cache
 
 lint: ## check style
-	uv run ruff check --fix app tests
+	uv run ruff check --fix copick_server
 
 test: ## run tests quickly with the default Python
 	uv run pytest . 

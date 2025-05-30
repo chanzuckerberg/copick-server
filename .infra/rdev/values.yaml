@@ -2,7 +2,7 @@ stack:
   services:
     copick-server:
       image:
-        tag: sha-0054280
+        tag: sha-959679e
       replicaCount: 1
       env:
         - name: PORT

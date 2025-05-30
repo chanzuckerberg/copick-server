@@ -174,7 +174,20 @@ async def test_handle_picks_request2(client2):
     """Test that picks requests are routed correctly."""
     picks_return = client2.get("/Picks?run_id=test_run&user_id=test_user&session_id=test_session&name=test_object")
     assert picks_return.status_code == 200
-    assert picks_return.json() == [{"location": {"x": 1, "y": 2, "z": 3}, "object_name": "test_object"}]
+    assert picks_return.json() == [{"location": {"x": 1, "y": 2, "z": 3}, "pickable_object_name": "test_object"}]
     
 
+@pytest.mark.asyncio
+async def test_handle_put_picks_request2(client2):
+    """Test that PUT requests for picks are handled correctly."""
+    data = {
+        "pickable_object_name": "test_object",
+        "user_id": "test_user",
+        "session_id": "test_session",
+        "picks": [{"location": {"x": 1, "y": 2, "z": 3}}],
+    }
+    response = client2.put("/Picks?run_id=test_run", json=data)
+    
+    assert response.status_code == 200
+    assert response.json()
     

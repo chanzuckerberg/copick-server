@@ -11,6 +11,9 @@ from copick_utils.writers.write import segmentation
 import json
 
 
+def get_copick_root(request: Request) -> copick.models.CopickRoot:
+    """Dependency to get the CopickRoot from the app state."""
+    return request.app.state.copick_root
 
 def get_app(settings: Settings) -> FastAPI:
 
@@ -78,24 +81,19 @@ async def get_picks(
 
 @app.put("/Picks")
 async def put_picks(
-    request: Request,
     run_id: str,
-    user_id: str,
-    session_id: str,
-    name: str,
+    picks_input: copick.models.CopickPicksFile,
     copick_root: copick.models.CopickRoot = Depends(get_copick_root),
 ):
     """Put the picks."""
     copick_run = copick_root.get_run(run_id)
-    #picks = copick_run.get_picks(user_id=user_id, session_id=session_id, object_name=name)
-    picks = copick_run.new_picks(
-        object_name=name, user_id=user_id, session_id=session_id
+    pick = copick_run.new_picks(
+        object_name=picks_input.pickable_object_name, user_id=picks_input.user_id, session_id=picks_input.session_id
     )
-    data = await request.json()
-    picks.meta = copick.models.CopickPicksFile(**data)
-    picks.store()
+    pick.meta = picks_input
+    pick.store()
     
-    return [pick.meta.dict() for pick in picks]
+    return pick.meta.dict()
 
 @app.get("/Segmentations")
 async def get_segmentations(request: Request, run_id: str, voxel_size: float, user_id: str, session_id: str, name: str, multilabel: bool = False):

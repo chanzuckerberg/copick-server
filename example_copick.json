@@ -118,7 +118,7 @@
       ],
     "user_id": "copickServer",
     "config_type": "cryoet_data_portal",
-    "overlay_root": "local:///tmp/copick/overlay",
+    "overlay_root": "local:///mnt/copick/overlay",
     "dataset_ids": [
         10440,
         10445,

@@ -4,3 +4,10 @@ stack:
       image:
         tag: sha-0054280
       replicaCount: 1
+      env:
+        - name: PORT
+          value: "8012"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: OVERLAY_ROOT
+          value: /mnt/copick/overlay

@@ -59,13 +59,13 @@ class CopickRoute:
         parts = path.split("/")
         if len(parts) < 2:
             return Response(status_code=404)
-            
+
         vs_str = parts[0].replace("VoxelSpacing", "")
         try:
             voxel_spacing = float(vs_str)
         except ValueError:
             return Response(status_code=404)
-            
+
         tomo_type = parts[1].replace(".zarr", "")
 
         # Get the tomogram
@@ -74,12 +74,12 @@ class CopickRoute:
             return Response(status_code=404)
         print("tomo_type", tomo_type)
         print("vs", vs)
-            
+
         tomogram = vs.get_tomogram(tomo_type)
         print(tomogram)
         if tomogram is None:
             return Response(status_code=404)
-            
+
         # Handle the request
         if request.method == "PUT" and not tomogram.read_only:
             try:
@@ -225,6 +225,7 @@ def create_copick_app(
     """
     app = FastAPI()
     route_handler = CopickRoute(root)
+
     @app.get("/health/")
     def health_check():
         """Health check endpoint."""
@@ -240,6 +241,7 @@ def create_copick_app(
         # Ensure CORS middleware is properly initialized
         try:
             from fastapi.middleware.cors import CORSMiddleware
+
             app.add_middleware(
                 CORSMiddleware,
                 allow_origins=cors_origins,
@@ -251,10 +253,17 @@ def create_copick_app(
             print(f"CORS middleware added with origins: {cors_origins}")
         except Exception as e:
             print(f"Error adding CORS middleware: {str(e)}")
-    
+
     return app
 
-def serve_copick(config_path: Optional[str] = None, dataset_ids: Optional[List[int]] = None, overlay_root: str = "/tmp/overlay_root", allowed_origins: Optional[List[str]] = None, **kwargs):
+
+def serve_copick(
+    config_path: Optional[str] = None,
+    dataset_ids: Optional[List[int]] = None,
+    overlay_root: str = "/tmp/overlay_root",
+    allowed_origins: Optional[List[str]] = None,
+    **kwargs,
+):
     """Start an HTTP server serving a Copick project.
 
     Parameters
@@ -269,13 +278,15 @@ def serve_copick(config_path: Optional[str] = None, dataset_ids: Optional[List[i
         List of allowed CORS origins. Use ["*"] to allow all.
     **kwargs
         Additional arguments passed to uvicorn.run()
-        
+
     Notes
     -----
     Either config_path or dataset_ids must be provided, but not both.
     """
     if config_path and dataset_ids:
-        raise ValueError("Either config_path or dataset_ids must be provided, but not both.")
+        raise ValueError(
+            "Either config_path or dataset_ids must be provided, but not both."
+        )
     elif config_path:
         root = copick.from_file(config_path)
     elif dataset_ids:
@@ -286,12 +297,19 @@ def serve_copick(config_path: Optional[str] = None, dataset_ids: Optional[List[i
         )
     else:
         raise ValueError("Either config_path or dataset_ids must be provided.")
-        
+
     app = create_copick_app(root, allowed_origins)
     uvicorn.run(app, **kwargs)
     return app
 
-def serve_copick_threaded(config_path: Optional[str] = None, dataset_ids: Optional[List[int]] = None, overlay_root: str = "/tmp/overlay_root", allowed_origins: Optional[List[str]] = None, **kwargs):
+
+def serve_copick_threaded(
+    config_path: Optional[str] = None,
+    dataset_ids: Optional[List[int]] = None,
+    overlay_root: str = "/tmp/overlay_root",
+    allowed_origins: Optional[List[str]] = None,
+    **kwargs,
+):
     """Start an HTTP server in a background thread and return the app.
 
     Parameters
@@ -311,13 +329,15 @@ def serve_copick_threaded(config_path: Optional[str] = None, dataset_ids: Option
     -------
     app : FastAPI
         FastAPI application
-        
+
     Notes
     -----
     Either config_path or dataset_ids must be provided, but not both.
     """
     if config_path and dataset_ids:
-        raise ValueError("Either config_path or dataset_ids must be provided, but not both.")
+        raise ValueError(
+            "Either config_path or dataset_ids must be provided, but not both."
+        )
     elif config_path:
         root = copick.from_file(config_path)
     elif dataset_ids:
@@ -328,7 +348,7 @@ def serve_copick_threaded(config_path: Optional[str] = None, dataset_ids: Option
         )
     else:
         raise ValueError("Either config_path or dataset_ids must be provided.")
-        
+
     app = create_copick_app(root, allowed_origins)
 
     # Start the server in a background thread
@@ -341,6 +361,7 @@ def serve_copick_threaded(config_path: Optional[str] = None, dataset_ids: Option
     server_thread.start()
 
     return app
+
 
 @click.group()
 @click.pass_context
@@ -394,14 +415,23 @@ def cli(ctx):
 )
 @click.option("--reload", is_flag=True, default=False, help="Enable auto-reload.")
 @click.pass_context
-def serve(ctx, config: Optional[str] = None, dataset_ids: Optional[tuple] = None, overlay_root: str = "/tmp/overlay_root", cors: Optional[str] = None, host: str = "127.0.0.1", port: int = 8000, reload: bool = False):
+def serve(
+    ctx,
+    config: Optional[str] = None,
+    dataset_ids: Optional[tuple] = None,
+    overlay_root: str = "/tmp/overlay_root",
+    cors: Optional[str] = None,
+    host: str = "127.0.0.1",
+    port: int = 8000,
+    reload: bool = False,
+):
     """Serve a Copick project over HTTP."""
-    
+
     if config and dataset_ids:
         ctx.fail("Either --config or --dataset-ids must be provided, not both.")
     elif not config and not dataset_ids:
         ctx.fail("Either --config or --dataset-ids must be provided.")
-    
+
     try:
         serve_copick(
             config_path=config,
@@ -410,7 +440,7 @@ def serve(ctx, config: Optional[str] = None, dataset_ids: Optional[tuple] = None
             allowed_origins=[cors] if cors else None,
             host=host,
             port=port,
-            reload=reload
+            reload=reload,
         )
     except Exception as e:
         ctx.fail(f"Error serving Copick project: {str(e)}")
@@ -418,6 +448,7 @@ def serve(ctx, config: Optional[str] = None, dataset_ids: Optional[tuple] = None
 
 def main():
     cli()
+
 
 if __name__ == "__main__":
     main()

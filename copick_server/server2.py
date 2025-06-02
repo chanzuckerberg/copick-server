@@ -124,6 +124,13 @@ def health_check():
     """Health check endpoint."""
     return {"status": "ok"}
 
+class PickReturn(BaseModel):
+    points: list[copick.models.CopickPoint] | None
+    pickable_object_name: str
+    user_id: str
+    session_id: str
+    unit: str   
+
 
 @app.get("/Picks")
 async def get_picks(
@@ -132,11 +139,10 @@ async def get_picks(
     """Get the picks."""
     copick_run = copick_root.get_run(run_id)
     print(copick_run)
-    # picks = copick_run.get_picks(user_id=user_id, session_id=session_id, object_name=name)
+    #picks = copick_run.get_picks(user_id=user_id, session_id=session_id, object_name=name)
     picks = copick_run.get_picks()
-    print(picks)
 
-    return [pick.meta.dict() for pick in picks]
+    return [PickReturn(**pick.meta.model_dump()) for pick in picks ]
 
 
 @app.put("/Picks")

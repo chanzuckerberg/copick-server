@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 from unittest.mock import MagicMock
 
 from copick_server.server import create_copick_app
-from copick_server.server2 import app, get_copick_root
+from copick_server.server2 import get_copick_root
 
 
 @pytest.fixture

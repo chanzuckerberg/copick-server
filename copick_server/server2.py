@@ -1,11 +1,11 @@
 import uvicorn
 from uvicorn.supervisors import ChangeReload
 
-from fastapi import FastAPI, Request, Response
+from fastapi import FastAPI, Request, Response, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from settings import Settings
+from copick_server.settings import Settings
 import copick
-from server import CopickRoute
+from copick_server.server import CopickRoute
 import numpy as np
 from copick_utils.writers.write import segmentation
 from pydantic import BaseModel
@@ -13,6 +13,10 @@ import ibis
 from rstar_python import PyRTree
 from collections import defaultdict
 
+
+def get_copick_root(request: Request) -> copick.models.CopickRoot:
+    """Dependency to get the CopickRoot from the app state."""
+    return request.app.state.copick_root
 
 ### pydantic validators
 class NearestPointQuery(BaseModel):
@@ -120,38 +124,44 @@ def health_check():
     """Health check endpoint."""
     return {"status": "ok"}
 
+class PickReturn(BaseModel):
+    points: list[copick.models.CopickPoint] | None
+    pickable_object_name: str
+    user_id: str
+    session_id: str
+    unit: str   
+
 
 @app.get("/Picks")
 async def get_picks(
-    request: Request, run_id: str, user_id: str, session_id: str, name: str
+    request: Request, run_id: str, user_id: str, session_id: str, name: str, copick_root: copick.models.CopickRoot = Depends(get_copick_root)
 ):
     """Get the picks."""
-    copick_root = request.app.state.copick_root
     copick_run = copick_root.get_run(run_id)
-    # picks = copick_run.get_picks(user_id=user_id, session_id=session_id, object_name=name)
+    print(copick_run)
+    #picks = copick_run.get_picks(user_id=user_id, session_id=session_id, object_name=name)
     picks = copick_run.get_picks()
 
-    return [pick.meta.dict() for pick in picks]
+    return [PickReturn(**pick.meta.model_dump()) for pick in picks ]
 
 
 @app.put("/Picks")
 async def put_picks(
-    request: Request, run_id: str, user_id: str, session_id: str, name: str
+    run_id: str,
+    picks_input: copick.models.CopickPicksFile,
+    copick_root: copick.models.CopickRoot = Depends(get_copick_root),
 ):
     """Put the picks."""
-    copick_root = request.app.state.copick_root
     copick_run = copick_root.get_run(run_id)
-    # picks = copick_run.get_picks(user_id=user_id, session_id=session_id, object_name=name)
-    picks = copick_run.new_picks(
-        object_name=name, user_id=user_id, session_id=session_id
+    pick = copick_run.new_picks(
+        object_name=picks_input.pickable_object_name, user_id=picks_input.user_id, session_id=picks_input.session_id
     )
-    data = await request.json()
-    picks.meta = copick.models.CopickPicksFile(**data)
-    picks.store()
+    pick.meta = picks_input
+    pick.store()
+    
+    return pick.meta.dict()
 
-    return [pick.meta.dict() for pick in picks]
-
-
+  
 @app.get("/Segmentations")
 async def get_segmentations(
     request: Request,
@@ -303,6 +313,7 @@ app.add_api_route(
     route_handler.handle_request,
     methods=["GET", "HEAD", "PUT"],
 )
+
 if __name__ == "__main__":
     config = uvicorn.Config(
         "server2:app", host=settings.HOST, port=settings.PORT, reload=True

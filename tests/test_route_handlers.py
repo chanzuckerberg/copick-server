@@ -149,7 +149,7 @@ async def test_handle_picks_get_not_found():
 
     # Create mocks
     run_mock = MagicMock()
-    run_mock.get_picks.return_value = []  # No picks found
+    run_mock.picks = []  # No picks found
     request_mock = MagicMock()
     request_mock.method = "GET"
     route_handler = CopickRoute(MagicMock())
@@ -159,9 +159,6 @@ async def test_handle_picks_get_not_found():
         request_mock, run_mock, "user_session_object.json"
     )
     assert response.status_code == 404
-    run_mock.get_picks.assert_called_once_with(
-        object_name="object", user_id="user", session_id="session"
-    )
 
 
 @pytest.mark.asyncio

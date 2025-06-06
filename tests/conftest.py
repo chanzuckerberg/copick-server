@@ -5,8 +5,10 @@ from pathlib import Path
 import copick
 import pytest
 from fastapi.testclient import TestClient
+from unittest.mock import MagicMock
 
 from copick_server.server import create_copick_app
+from copick_server.server2 import get_copick_root
 
 
 @pytest.fixture
@@ -66,3 +68,35 @@ def app(mock_copick_root):
 def client(app):
     """Create a test client for the application."""
     return TestClient(app)
+
+@pytest.fixture
+def pick_mocks():
+    """Provide a mock for CopickRoot.get_picks."""
+    picks = MagicMock()
+    picks.meta.dict.return_value = [{"location": {"x": 1, "y": 2, "z": 3}, "pickable_object_name": "test_object"}]
+    return picks
+
+@pytest.fixture
+def mock_root(pick_mocks):
+    """Provide a mocked CopickRoot for tests."""
+    run_mock = MagicMock()
+    run_mock.get_picks.return_value = [pick_mocks]
+    run_mock.new_picks.return_value = pick_mocks
+
+    root = MagicMock()
+    root.get_run.return_value = run_mock
+    return root
+
+@pytest.fixture
+def app2(mock_root):
+    """Create a test FastAPI application with CORS."""
+    from copick_server.server2 import app
+    app.dependency_overrides[get_copick_root] = lambda: mock_root
+
+    return app
+
+@pytest.fixture
+def client2(app2):
+    """Create a test client for the application."""
+
+    return TestClient(app2)

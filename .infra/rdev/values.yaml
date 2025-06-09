@@ -2,5 +2,12 @@ stack:
   services:
     copick-server:
       image:
-        tag: sha-e780d28
+        tag: sha-c9c258b
       replicaCount: 1
+      env:
+        - name: PORT
+          value: "8012"
+        - name: HOST
+          value: "0.0.0.0"
+        - name: OVERLAY_ROOT
+          value: /mnt/copick/overlay

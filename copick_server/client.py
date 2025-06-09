@@ -4,8 +4,10 @@ import numpy as np
 from fsspec import get_mapper
 
 # First read the tomogram to get the shape
-store = get_mapper("http://localhost:8012/16463/Tomograms/VoxelSpacing10.012/wbp-denoised-denoiset-ctfdeconv.zarr")
-tomo = zarr.open(store, mode='r')
+store = get_mapper(
+    "http://localhost:8012/16463/Tomograms/VoxelSpacing10.012/wbp-denoised-denoiset-ctfdeconv.zarr"
+)
+tomo = zarr.open(store, mode="r")
 full_shape = tomo["0"].shape
 print(f"Tomogram shape: {full_shape}")
 

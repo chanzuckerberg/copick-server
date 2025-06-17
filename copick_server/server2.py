@@ -252,6 +252,7 @@ SCALING_FACTOR = 10000  # TODO: add to settings
 async def nearest_points(point_query: NearestPointQuery):
     """Get the nearest points."""
     embeddings_table = ibis.read_parquet("data/embeddings.parquet")
+    
     # TODO: handle embeddings better
     points = (
         embeddings_table.select(

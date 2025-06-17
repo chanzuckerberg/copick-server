@@ -18,6 +18,7 @@ services:
     
 networks:
   default:
-    name: copick-server
+    name: copick-network
     driver: overlay
+    external: true
     attachable: true

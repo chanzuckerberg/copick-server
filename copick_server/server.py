@@ -154,7 +154,6 @@ class CopickRoute:
         session_id = seg_parts[2]
         name = "_".join(seg_parts[3:])
         is_multilabel = "multilabel" in name
-
         # Get or create segmentation
         if request.method == "PUT":
             try:

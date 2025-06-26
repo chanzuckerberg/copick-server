@@ -12,6 +12,7 @@ from pydantic import BaseModel
 import ibis
 from rstar_python import PyRTree
 from collections import defaultdict
+import ast
 
 
 def get_copick_root(request: Request) -> copick.models.CopickRoot:
@@ -59,12 +60,12 @@ def fast_dot_product(query, matrix, k=3):
 
 def output_format(df_row):
     return {
-        "X": df_row.X.item(),
-        "Y": df_row.Y.item(),
-        "Z": df_row.Z.item(),
+        "X": df_row.x.item(),
+        "Y": df_row.y.item(),
+        "Z": df_row.z.item(),
         "run_name": df_row.run.item(),
         "prediction": df_row.protein,
-        "embeddings": df_row.iloc[5:].to_numpy(dtype=float).tolist(),
+        "embeddings": df_row.embeddings, 
     }
 
 
@@ -251,25 +252,26 @@ SCALING_FACTOR = 10000  # TODO: add to settings
 @app.post("/nearest_points")
 async def nearest_points(point_query: NearestPointQuery):
     """Get the nearest points."""
-    embeddings_table = ibis.read_parquet("data/embeddings.parquet")
+    embeddings_table = ibis.read_parquet("data/embeddings2.parquet")
     
     # TODO: handle embeddings better
     points = (
         embeddings_table.select(
-            ["X", "Y", "Z", "run", "protein"] + [str(i) for i in range(32)]
+            ["x", "y", "z", "run", "embeddings", "protein"]
         )
         .filter(embeddings_table["run"] == point_query.run_id)
         .to_pandas()
     )
+    points["embeddings"] = points["embeddings"].apply(ast.literal_eval)
     point_lookup = {}
     run_to_points_map = defaultdict(list)
     for _, point in points.iterrows():
-        run_to_points_map[point.run].append([point.X, point.Y, point.Z])
-        point_lookup[points_to_index(point.X, point.Y, point.Z)] = {
+        run_to_points_map[point.run].append([point.x, point.y, point.z])
+        point_lookup[points_to_index(point.x, point.y, point.z)] = {
             "run_name": point.run,
             "prediction": point.protein,
-            "location": (point.X, point.Y, point.Z),
-            "embeddings": list(point[[str(i) for i in range(32)]]),
+            "location": (point.x, point.y, point.z),
+            "embeddings": point.embeddings,
         }
     tree = PyRTree(dims=3)
     tree.bulk_load(run_to_points_map[point_query.run_id])
@@ -287,16 +289,19 @@ async def embedding_similarity(
     embedding_query: NearestEmbeddingQuery,
 ):
     """Get the nearest points based on embedding similarity."""
-    embeddings_table = ibis.read_parquet("data/embeddings.parquet")
+    embeddings_table = ibis.read_parquet("data/embeddings2.parquet")
     df = (
         embeddings_table.select(
-            ["X", "Y", "Z", "run", "protein"] + [str(i) for i in range(32)]
+            ["x", "y", "z", "run", "embeddings", "protein"]
         )
         .filter(embeddings_table["run"] == embedding_query.run_id)
         .to_pandas()
     )  # TODO: again, handle embeddings better
-    embeddings = df.iloc[:, 5:].to_numpy(dtype=float)
+    
+    df["embeddings"] = df["embeddings"].apply(ast.literal_eval)
+    embeddings = np.asarray(df.embeddings.tolist(), dtype=float)
     query = np.array(embedding_query.embedding, dtype=float)
+    
 
     # Assuming embedding is 1d vector maybe a bad assumption?
     assert query.shape[0] == embeddings.shape[1]

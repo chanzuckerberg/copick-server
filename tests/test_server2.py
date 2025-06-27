@@ -174,7 +174,12 @@ async def test_handle_picks_request2(client2):
     """Test that picks requests are routed correctly."""
     picks_return = client2.get("/Picks?run_id=test_run&user_id=test_user&session_id=test_session&name=test_object")
     assert picks_return.status_code == 200
-    assert picks_return.json() == [{"location": {"x": 1, "y": 2, "z": 3}, "pickable_object_name": "test_object"}]
+    assert picks_return.json() is not None
+    return_json = picks_return.json()
+    assert return_json[0]["points"][0]["location"] == {"x": 1, "y": 2, "z": 3}
+    assert return_json[0]["pickable_object_name"] == "test_object"
+    assert return_json[0]["user_id"] == "test_user"
+    assert return_json[0]["session_id"] == "test_session"
     
 
 @pytest.mark.asyncio

@@ -73,7 +73,7 @@ def client(app):
 def pick_mocks():
     """Provide a mock for CopickRoot.get_picks."""
     picks = MagicMock()
-    picks.meta.dict.return_value = [{"location": {"x": 1, "y": 2, "z": 3}, "pickable_object_name": "test_object"}]
+    picks.meta.model_dump.return_value = {"points": [{"location": {"x": 1, "y": 2, "z": 3}}], "pickable_object_name": "test_object", "user_id": "test_user", "session_id": "test_session", "unit": "angstrom"}
     return picks
 
 @pytest.fixture

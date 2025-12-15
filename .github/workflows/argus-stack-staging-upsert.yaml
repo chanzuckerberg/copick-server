@@ -32,4 +32,4 @@ jobs:
           appName: copick-server
           envName: staging
           waitForDeploymentSeconds: 300
-          postStackDetails: false
+          postStackDetails: comment
